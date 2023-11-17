@@ -3,11 +3,9 @@ package color
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
+	"io"
 )
 
 type inner func(any, []string, *Color) string
@@ -146,19 +144,31 @@ func (c *Color) Output() io.Writer {
 // SetOutput sets the output.
 func (c *Color) SetOutput(w io.Writer) {
 	c.output = w
-	if w, ok := w.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
-		c.disabled = true
+	c.disabled = !isTerminal(w)
+}
+
+func (c *Color) Write(b []byte) (int, error) {
+	return c.output.Write(b)
+}
+
+func isTerminal(a any) bool {
+	if f, ok := a.(interface{ Fd() uintptr }); ok {
+		return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+	}
+	return false
+}
+
+// Enable enables the colors and styles if b sets.
+func (c *Color) Enable(b ...bool) {
+	if len(b) > 0 {
+		c.disabled = b[0]
+	} else {
+		c.disabled = false
 	}
 }
 
-// Disable disables the colors and styles.
-func (c *Color) Disable() {
-	c.disabled = true
-}
-
-// Enable enables the colors and styles.
-func (c *Color) Enable() {
-	c.disabled = false
+func (c *Color) Enabled() bool {
+	return c.disabled
 }
 
 // Print is analogous to `fmt.Print` with terminal detection.
@@ -286,12 +296,12 @@ func SetOutput(w io.Writer) {
 	global.SetOutput(w)
 }
 
-func Disable() {
-	global.Disable()
+func Enable(b ...bool) {
+	global.Enable(b...)
 }
 
-func Enable() {
-	global.Enable()
+func Enabled() bool {
+	return global.Enabled()
 }
 
 // Print is analogous to `fmt.Print` with terminal detection.
