@@ -53,8 +53,8 @@ func TestMixMatch(t *testing.T) {
 }
 
 func TestEnableDisable(t *testing.T) {
-	Disable()
+	Enable(false)
 	assert.Equal(t, "red", Red("red"))
-	Enable()
+	Enable(true)
 	assert.NotEqual(t, "green", Green("green"))
 }
